@@ -6,6 +6,7 @@ import Home from "./components/home";
 import Edit from "./components/edit";
 import Data from "./components/data";
 import Nav from "react-bootstrap/Nav";
+import "bootstrap/dist/css/bootstrap.min.css";
 function Root()
 {
     const navigate=useNavigate();
@@ -22,6 +23,7 @@ function Root()
     </div>
     );
 }
+
 function App()
 {
     return(

@@ -30,7 +30,7 @@ class Games
         return this.name;
     }
 
-    public getGameGenre():any
+    public getGameGenre():string
     {
         return this.genre;
     }

@@ -1,59 +1,61 @@
-import React, {useEffect , useState} from "react";
-import {Button,Grid, TextField,FormControl, FormGroup} from "@mui/material";
-import "bootstrap/dist/css/bootstrap.min.css";
-import array from "./array";
-import {Link, useParams} from "react-router-dom"
-import {useNavigate} from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Button, Grid, TextField, FormControl } from "@mui/material";
+import { Link, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Games from "./Games";
 import axios from "axios";
 
 
 function Edit()
 {
-    const [Name,setname] = useState("");
-    const [Release_date,setrelease] = useState("");
-    const [Genre,setgenre] = useState("");
-    const [Size,setsize] = useState(0);
-    const{id}=useParams();
-
-    let history = useNavigate();
-
-    let index = array.map(function (e){return e.getGameId()}).indexOf(id || "");
-  
-    const handleSubmit = (e:React.MouseEvent<HTMLButtonElement>) =>
-    {   
-        e.preventDefault();
-        if(Name == "")
-        {
-            alert("invalid input");
-            return ;
-        }
-
-        
-        let a = array[index];
-
-        a.setGameName(Name);
-        a.setGameReleaseDate(Release_date);
-        a.setGameGenre(Genre);
-        a.setGameSize(Size);
-        history("/");
-    }
-
-
+    const {id} = useParams();
+    const [Name,setName] = useState("");
+    const [Release_date,setRelease] = useState("");
+    const [Genre,setGenre] = useState("");
+    const [Size,setSize] = useState(0);
+    const history = useNavigate();
 
     useEffect(() => {
-      axios.get("http://localhost:3000/edit"+id).then(res => console.log(res)).catch(err => console.log(err));
-      setsize(parseInt(localStorage.getItem("size") as string));
-      setgenre(localStorage.getItem("genre") as string)
-      setrelease(localStorage.getItem("release_date") as string);
-      setname(localStorage.getItem("name") as string);
-      
-    },[]);
+      axios.get(`http://localhost:5000/edit/${id}`)
+          .then((res) => {
+              const { name , release_date , genre , size } = res.data;
+              setName(name);
+              setRelease(release_date);
+              setGenre(genre);
+              setSize(size);
+          })
+          .catch((err) => {
+              console.error("Error fetching game data:", err);
+          });
+  }, [id]);
+
+   
+  
+    const handleSubmit = (e) =>
+    {   
+        e.preventDefault();
+        if(!Name.trim() || !Release_date.trim() || !Genre.trim() || Size <= 0)
+        {
+            alert("The input should be Month Day, Year for the release date and the name must start with capital letter. Please fill out all fields correctly.");
+            return;
+        }
+        const updatedGame = new Games(Name, Genre, Release_date, Size, id);
+        try
+        {
+            axios.put("http://localhost:5000/edit/"+id,updatedGame);
+            history("/");
+        }
+        catch(error)
+        {
+            console.error("Error updating game:",error);
+            alert("An error occurred while updating the game. Please try again later.");
+        }
+    }; 
 
     const handleKeyPress = (e) =>{
       if(e.key == "Enter")
       handleSubmit(e);
-    }
+    };
 
     return(
     <div onKeyPress={handleKeyPress}>
@@ -64,7 +66,7 @@ function Edit()
               id="nameinput"
               label="Name"
               value={Name }
-              onChange={(e) => setname(e.target.value)}
+              onChange={(e) => setName(e.target.value)}
               type="text"
               placeholder="Enter name"
             />
@@ -76,7 +78,7 @@ function Edit()
                     id="releaseinput"
                     label="Release Date"
                     value={Release_date}
-                    onChange={(e) => setrelease(e.target.value)}
+                    onChange={(e) => setRelease(e.target.value)}
                     type="text"
                     placeholder="Enter release date"
                 />
@@ -88,7 +90,7 @@ function Edit()
                     id="genreinput"
                     label="Genre"
                     value={Genre}
-                    onChange={(e) => setgenre(e.target.value)}
+                    onChange={(e) => setGenre(e.target.value)}
                     type="text"
                     placeholder="Enter genre"
                 />
@@ -100,7 +102,7 @@ function Edit()
                     id="sizeinput"
                     label="Size"
                     value={Size}
-                    onChange={(e) => setsize(Number(e.target.value))}
+                    onChange={(e) => setSize(Number(e.target.value))}
                     type="number"
                     placeholder="Enter size"
                 />
@@ -127,5 +129,4 @@ function Edit()
     </div>
     );
 }
-
 export default Edit;
