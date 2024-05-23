@@ -2,54 +2,51 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {  Grid, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, Typography, Paper, FormControl, InputLabel, Select, TableFooter, TablePagination, Box } from "@mui/material";
 import "bootstrap/dist/css/bootstrap.min.css";
 import CheckConnection from "./NetworkStatusIndicator";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import "./home.css";
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
-import axios from "axios";
-import Games from "./Games";
 import TablePaginationActions from "@mui/material/TablePagination/TablePaginationActions";
-import {io} from "socket.io-client";
+import axios from "axios";
+import { GamesContext } from "../App";
 ChartJS.register( ArcElement, Tooltip, Legend);
 
 function Home() {
-  const history = useNavigate();
 
   // State for holding game data
+  const games = React.useContext(GamesContext);
+  
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const socket = new WebSocket("ws://localhost:5000");
   
   // Fetch data from the backend API
   useEffect(() => {
-
-    socket.onerror = (error) => {
-      setError(error);
-      console.error("WebSocket error:", error);
-    }
-
-    socket.onopen = () => {
-      console.log("WebSocket connection established.");
-    };
-
-    socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.type === "initialData") {
-        setData(message.data);
-        setLoading(false);
-      } else if (message.type === "updateData") {
-        data.push(message.data);
-      }
-    };
-
-    socket.onclose = () => {
-      console.log("WebSocket connection closed.");
-    };
-
-
+      const fetchData = async () => {
+        const name = localStorage.getItem("name");
+        try {
+          const response = await axios.get(`http://localhost:5000/developers/${name}/games`);
+          setData(response.data);
+          setLoading(false);
+        } catch (error) {
+          setError(error);
+          setLoading(false);
+        }
+      };
+      fetchData();
   }, []);
 
+  // Delete game function
+  const handleDelete = async (id) => {
+    try{
+    await axios.delete(`http://localhost:5000/games/${id}`);
+    setData(data.filter((game) => game.id !== id));
+
+    }catch(error){
+      console.error("Error deleting game:", error);
+      alert("An error occurred while deleting the game. Please try again later.");
+    }
+  };
   // Pagination state
   const [currentPage, setCurrentPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -63,17 +60,6 @@ function Home() {
     const newRowsPerPage = parseInt(event.target.value, 10);
     setRowsPerPage(newRowsPerPage);
     setCurrentPage(0); // Reset current page when changing rows per page
-  };
-
-  // Delete game function
-  const handleDelete = async (id) => {
-    try {
-      const message = { type: 'delete', gameId: id };
-      socket.send(JSON.stringify(message));
-      setData(data.filter((game) => game.game_id !== id));
-    } catch (error) {
-      console.error("Error deleting game:", error);
-    }
   };
 
   
@@ -131,20 +117,21 @@ function Home() {
                     </TableHead>
                     <TableBody>
                       {(rowsPerPage > 0
-                        ? data.slice(currentPage * rowsPerPage, currentPage * rowsPerPage + rowsPerPage)
+                        ? games.slice(currentPage * rowsPerPage, currentPage * rowsPerPage + rowsPerPage)
                         : data
                       ).map((item) => (
-                        <TableRow key={item.game_id}>
+                        <TableRow key={item.getGameId()
+                        }>
                           <TableCell>
-                            <Link to={`/data/${item.game_id}`}>
-                              {item.name}
+                            <Link to={`/data/${item.getGameId()}`}>
+                              {item.getGameName()}
                             </Link>
                           </TableCell>
-                          <TableCell>{item.release_date}</TableCell>
-                          <TableCell>{item.genre}</TableCell>
-                          <TableCell>{item.size}</TableCell>
+                          <TableCell>{item.getGameReleaseDate()}</TableCell>
+                          <TableCell>{item.getGameGenre()}</TableCell>
+                          <TableCell>{item.getGameSize()}</TableCell>
                           <TableCell>
-                            <Link to={`/edit/${item.game_id}`}>
+                            <Link to={`/edit/${item.getGameId()}`}>
                               <Button variant="contained" color="primary" size="small">
                                 Edit
                               </Button>
@@ -155,7 +142,7 @@ function Home() {
                               variant="contained"
                               color="secondary"
                               size="small"
-                              onClick={() => handleDelete(item.game_id)}
+                              onClick={() => handleDelete(item.getGameId())}
                             >
                               Delete
                             </Button>
@@ -184,6 +171,11 @@ function Home() {
                     Add
                   </Button>
                 </Link>
+                <Link to="/developers" style={{ textDecoration: 'none' }}>
+                  <Button variant="contained" color="warning" size="large">
+                    Developers
+                  </Button>
+                </Link>
               </>
             )}
           </Paper>
@@ -205,7 +197,6 @@ function Home() {
 export default Home;
 
 
-function setErrorMessage(arg0: string) {
-  throw new Error("Function not implemented.");
-}
+
+
 

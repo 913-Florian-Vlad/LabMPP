@@ -1,40 +1,70 @@
-import React, { useState } from "react";
-import { Button, FormControl, Grid, TextField } from "@mui/material";
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import React, { useEffect, useState } from "react";
+import { Box, Button, FormControl, Grid, InputLabel, MenuItem, TextField, Typography } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { GamesContext } from "../App";
 import Games from "./Games";
+import Select, { SelectChangeEvent } from '@mui/material/Select';
+import Developer from "./Developer";
 
-function Create() {
-  const [name, setName] = useState("");
-  const [release, setRelease] = useState("");
-  const [genre, setGenre] = useState("");
-  const [size, setSize] = useState(0);
+function Create() 
+{
+  // State for holding game data
+  const games = React.useContext(GamesContext);
+  const [game,setGame]=useState({
+    name:"",
+    release_date:"",
+    genre:"",
+    size:0,
+    developer_id:0,
+  });
+  const [developer_name,setDeveloperName]=useState("");
+  const [developers,setDeveloper] = useState<Developer[]>([]);
+  const devName = localStorage.getItem("name");
+  const history = useNavigate();
 
-  let history = useNavigate();
+  
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
-    if (!name.trim() || !release.trim() || !genre.trim() || size <= 0) {
+
+    if (!game.name.trim() || !game.release_date.trim() || !game.genre.trim() || game.size <= 0) {
       alert("Please fill out all fields correctly.");
       return;
     }
 
-    // Create a new game object
-    const newGame = new Games(name, genre, release, size, "");
-
-    try {
-      // Send the game data to the backend
-      const response = await axios.post("http://localhost:5000/add", newGame);
-
-      // Redirect to the home page after successful creation
+      try{
+      const developer = await axios.get(`http://localhost:5000/developers/${devName}`);
+      const developerData = developer.data.developer_id;
+      game.developer_id = developerData;
+      const response = await axios.post("http://localhost:5000/games", game);
       history("/");
+      }
+      catch(error){
+        console.error("Error creating game:", error);
+        alert("An error occurred while creating the game. Please try again later.");
+      }
+    
+      
+  };
+  
+  
+
+useEffect(() => {
+  const fetchDevelopers = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/developers/20");
+      setDeveloper(response.data);
     } catch (error) {
-      console.error("Error creating game:", error);
-      alert("An error occurred while creating the game. Please try again later.");
+      console.error("Error fetching developers:", error);
+      alert("An error occurred while fetching developers. Please try again later.");
     }
   };
+
+  fetchDevelopers();
+  }, []);
 
   return (
     <div>
@@ -44,8 +74,8 @@ function Create() {
             <TextField
               id="nameinput"
               label="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={game.name}
+              onChange={(e) => setGame({...game,name:e.target.value})}
               type="text"
               placeholder="Enter name"
             />
@@ -56,8 +86,8 @@ function Create() {
             <TextField
               id="releaseinput"
               label="Release Date"
-              value={release}
-              onChange={(e) => setRelease(e.target.value)}
+              value={game.release_date}
+              onChange={(e) => setGame({...game,release_date:e.target.value})}
               type="text"
               placeholder="Enter release date"
             />
@@ -68,8 +98,8 @@ function Create() {
             <TextField
               id="genreinput"
               label="Genre"
-              value={genre}
-              onChange={(e) => setGenre(e.target.value)}
+              value={game.genre}
+              onChange={(e) => setGame({...game,genre:e.target.value})}
               type="text"
               placeholder="Enter genre"
             />
@@ -80,8 +110,8 @@ function Create() {
             <TextField
               id="sizeinput"
               label="Size"
-              value={size}
-              onChange={(e) => setSize(Number(e.target.value))}
+              value={game.size}
+              onChange={(e) => setGame({...game, size:parseInt(e.target.value)})}
               type="number"
               placeholder="Enter size"
             />

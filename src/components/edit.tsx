@@ -13,16 +13,18 @@ function Edit()
     const [Release_date,setRelease] = useState("");
     const [Genre,setGenre] = useState("");
     const [Size,setSize] = useState(0);
+    const [Developer_id,setDeveloper] = useState(0);
     const history = useNavigate();
 
     useEffect(() => {
-      axios.get(`http://localhost:5000/edit/${id}`)
+      axios.get(`http://localhost:5000/games/${id}`)
           .then((res) => {
-              const { name , release_date , genre , size } = res.data;
+              const { name , release_date , genre , size , Developer_id } = res.data;
               setName(name);
               setRelease(release_date);
               setGenre(genre);
               setSize(size);
+              setDeveloper(Developer_id);
           })
           .catch((err) => {
               console.error("Error fetching game data:", err);
@@ -39,14 +41,16 @@ function Edit()
             alert("The input should be Month Day, Year for the release date and the name must start with capital letter. Please fill out all fields correctly.");
             return;
         }
-        const updatedGame = new Games(Name, Genre, Release_date, Size, id);
+        //const updatedGame = new Games(Name, Genre, Release_date, Size,Developer_id, parseInt(id));
+        const updatedGame = {name:Name,genre:Genre,release_date:Release_date,size:Size,developer_id:Developer_id,id:id }
         try
         {
-            axios.put("http://localhost:5000/edit/"+id,updatedGame);
+
+            axios.put(`http://localhost:5000/edit/${id}`,updatedGame);
             history("/");
         }
         catch(error)
-        {
+        { 
             console.error("Error updating game:",error);
             alert("An error occurred while updating the game. Please try again later.");
         }

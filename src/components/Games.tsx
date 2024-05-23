@@ -4,16 +4,33 @@ class Games
     private name:string;
     private genre:string;
     private release_date:string;
-    private game_id:string;
+    private game_id:number;
     private size:number;
-    constructor(name:string, genre:string, release_date:string,size:number ,game_id:string )
+    private developer_id:number;
+
+
+
+    constructor(name:string, genre:string, release_date:string,size:number , developer_id:number,game_id:number )
     {
         this.name = name;
         this.genre = genre;
         this.release_date = release_date;
         this.game_id = game_id;
         this.size = size;
+        this.developer_id = developer_id;
     }
+
+    public getDeveloperId():number
+    {
+        return this.developer_id;
+    }
+
+    public setDeveloperId(developer_id:number)
+    {
+        this.developer_id = developer_id;
+    }
+
+
 
     public getGameSize():number
     {
@@ -40,7 +57,7 @@ class Games
         return this.release_date;
     }
 
-    public getGameId():string
+    public getGameId():number
     {
         return this.game_id;
     }
@@ -60,7 +77,7 @@ class Games
         this.release_date = release_date;
     }
 
-    public setGameId(game_id:string)
+    public setGameId(game_id:number)
     {
         this.game_id = game_id;
     }
