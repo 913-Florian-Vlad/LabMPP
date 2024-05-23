@@ -1,152 +1,267 @@
-import express, { Request, Response } from 'express';
-import bodyParser from 'body-parser';
-import cors from 'cors';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable spaced-comment */
+/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-misused-promises */
+import express, { type Request, type Response } from 'express';
 import http from 'http';
-import Games from './Data/Games';
-import { generateNewGame } from './Data/arrayGeneration';
-import newArrayRandom from './Data/arrayGeneration';
-import { validateGame } from './middleware/server-side-validations';
-import WebSocket from 'ws';
+import { generateNewGame, generateNewDeveloper , boom } from './Data/arrayGeneration';
+import { Server } from 'socket.io';
+import mongoose from 'mongoose';
+import { GamesModel } from './Data/GamesModel';
+import { DevelopersModel } from './Data/Developers';
+import { UserModel } from './Data/UserModel';
+import cors from 'cors';
+import jwt from 'jsonwebtoken';
 
 const app = express();
-const PORT = 5000;
-const server = http.createServer(app); // Create HTTP server
-const wss = new WebSocket.Server({ server }); // Attach WebSocket to the HTTP server
-
-// Middleware
 app.use(cors());
-app.use(bodyParser.json());
-const array: Games[] = newArrayRandom;
 
-// WebSocket event handling
-wss.on('connection', (ws: WebSocket) => {
-  // Handle messages from clients
-  ws.on('message', (message: string) => {
-    console.log('Received message from client:', message);
-    const data = JSON.parse(message);
-    switch (data.type) {
-      case 'delete':
-        handleDelete(data.gameId);
-        break;
-      default:
-        console.log('Invalid message type');
-    }
+app.use(express.json());
+const PORT = 5000;
+const server = http.createServer(app);
+const io = new Server(server);
+
+// MongoDB Connection
+const uri =
+  'mongodb+srv://vladfl1234567890:G16ocn5Hv3AA0Q4m@backenddb.e0b84uj.mongodb.net/?retryWrites=true&w=majority&appName=BackendDB';
+
+mongoose
+  .connect(uri)
+  .then(() => {
+    console.log('Connected to MongoDB');
+    server.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error(err);
   });
 
+// WebSocket event handling
+io.on('connection', async socket => {
+  try {
+    console.log('A client connected.');
+    const initialData = await GamesModel.find({});
+    socket.emit('initialData', initialData);
+  } catch (err) {
+    console.error(err);
+  }
   // Handle disconnect
-  ws.on('close', () => {
+  socket.on('disconnect', () => {
     console.log('A client disconnected.');
   });
 });
 
-const generateNewEntities = () => {
-  setInterval(() => {
-    const newGame = generateNewGame();
-    array.push(newGame);
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(
-          JSON.stringify({
-            type: 'initialData',
-            data: array.sort((a, b) => {
-              return a.getGameSize() > b.getGameSize() ? 1 : -1;
-            }),
-          })
-        );
-      }
-    });
-  }, 5000);
-};
-generateNewEntities();
 
-// CRUD operations
-const handleAdd = (gameData: any) => {
-  const { name, genre, release_date, size } = gameData;
-  const gameId = array.length + 1;
-  const newGame = new Games(name, genre, release_date, size, gameId.toString());
-  array.push(newGame);
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ type: 'updateData', data: array }));
+
+// Get All Games
+app.get('/games', async (req: Request, res: Response) => {
+  try {
+    const games = await GamesModel.find({});
+    res.json(games);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+//Get Game by ID
+app.get('/games/:id', async (req: Request, res: Response) => {
+  try {
+    const game = await GamesModel.findOne({id:req.params.id});
+    res.json(game);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+//Create Game
+app.post('/games', async (req: Request, res: Response) => {
+  try {
+    const newGame = new GamesModel(req.body);
+    const savedGame = await newGame.save();
+    res.json(savedGame);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+//Update Game
+app.put('/edit/:id', async (req: Request, res: Response) => {
+  try {
+    const updatedGame = await GamesModel.updateOne({id:parseInt(req.params.id)},req.body);
+    res.json(updatedGame);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+//Delete Game
+app.delete('/games/:id', async (req: Request, res: Response) => {
+  try {
+    await GamesModel.findOneAndDelete({id:req.params.id});
+    res.json({ message: 'Game deleted' });
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+//Get All Developers
+app.get('/developers', async (req: Request, res: Response) => {
+  try {
+    const developers = await DevelopersModel.find({});
+    res.json(developers);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+//Get 20 Developers
+app.get('/developers/20', async (req: Request, res: Response) => {
+  try {
+    const developers = await DevelopersModel.find({}).limit(20);
+    res.json(developers);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+//Add Developer
+app.post('/developers', async (req: Request, res: Response) => {
+  try {
+    const newDeveloper = new DevelopersModel(req.body);
+    const savedDeveloper = await newDeveloper.save();
+    res.json(savedDeveloper);
+  } catch (err) {
+    console.error(err);
+  }
+});
+//Update Developer
+app.put('/developers/:id', async (req: Request, res: Response) => {
+  try {
+    const updatedDeveloper = await DevelopersModel.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    res.json(updatedDeveloper);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+//Delete Developer
+app.delete('/developers/:id', async (req: Request, res: Response) => {
+  try {
+    await DevelopersModel.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Developer deleted' });
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+//Get games by developer name
+app.get('/developers/:name/games', async (req: Request, res: Response) => {
+  try {
+    const developer = await DevelopersModel.findOne({name:req.params.name});
+    const games = await GamesModel.find({developer_id:developer?.developer_id});
+    res.json(games);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+//Aggregation for how many games each developer has
+app.get('/developers/games', async (req: Request, res: Response) => {
+  try {
+    const games = await GamesModel.aggregate([
+      {
+        $group: {
+          _id: '$developer_id',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    res.json(games);
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+app.get('/users',async (req:Request , res:Response) =>
+{
+  try{
+  const users = await UserModel.find({});
+  res.json(users);
+  }catch(err)
+  {
+    console.error(err);
+  }
+}
+)
+
+app.post('/register',async (req:Request , res:Response) =>
+{
+  try{
+    const checkUser = await UserModel.findOne({name:req.body.name});
+    if(checkUser?.name != null)
+    {
+      res.json({message:"User already exists"});
+    }else{
+    const newUser = new UserModel(req.body);
+    const savedUser = await newUser.save();
+    res.json(savedUser);
     }
-  });
-};
-
-const handleEdit = (gameData: any) => {
-  const { id, name, release_date, genre, size } = gameData;
-  const gameIndex = array.findIndex(game => game.getGameId() === id);
-  if (gameIndex !== -1) {
-    array[gameIndex].setGameName(name);
-    array[gameIndex].setGameReleaseDate(release_date);
-    array[gameIndex].setGameGenre(genre);
-    array[gameIndex].setGameSize(size);
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ type: 'updateData', data: array }));
-      }
-    });
-  } else {
-    console.log('Game not found');
+  }catch(err)
+  {
+    console.error(err);
   }
-};
+}
+)
 
-const handleDelete = (gameId: string) => {
-  const gameIndex = array.findIndex(game => game.getGameId() === gameId);
-  if (gameIndex !== -1) {
-    array.splice(gameIndex, 1);
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ type: 'updateData', data: array }));
-      }
-    });
-  } else {
-    console.log('Game not found');
-  }
-};
-app.get('/data/:id', (req: Request, res: Response) => {
-  res.json(array.find(game => game.getGameId() === req.params.id));
-});
-
-app.get('/edit/:id', (req: Request, res: Response) => {
-  res.json(array.find(game => game.getGameId() === req.params.id));
-});
-
-app.put('/edit/:id', validateGame, (req: Request, res: Response) => {
-  const gameId = req.params.id;
-  const { name, release_date, genre, size } = req.body;
-  const gameIndex = array.findIndex(game => game.getGameId() === gameId);
-  if (gameIndex !== -1) {
-    array[gameIndex].setGameName(name);
-    array[gameIndex].setGameReleaseDate(release_date);
-    array[gameIndex].setGameGenre(genre);
-    array[gameIndex].setGameSize(size);
-    res.json({ message: 'Game updated successfully', game: array[gameIndex] });
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify({ type: 'updateData', data: array }));
-      }
-    });
-  } else {
-    res.status(404).json({ message: 'Game not found' });
-  }
-});
-
-app.post('/add', validateGame, (req: Request, res: Response) => {
-  const { name, genre, release_date, size } = req.body;
-  const gameId = array.length + 1;
-  const newGame = new Games(name, genre, release_date, size, gameId.toString());
-  array.push(newGame);
-  res.status(201).json(newGame);
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ type: 'updateData', data: array }));
+app.post('/login',async (req:Request , res:Response) =>
+{
+  try{
+    const {name , password} = req.body;
+    const user = await UserModel.findOne({name:req.body.name});
+    if(user?.password === req.body.password)
+    {
+      const token = jwt.sign({ name }, 'key', { expiresIn: '15m' });
+      res.json({message:"Login successful", token});
     }
-  });
+    else{
+      res.json({message:"Login failed"});
+    }
+  }catch(err)
+  {
+    console.error(err);
+  }
 });
 
-// Start server
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
-
+//get user by username 
+app.get('/users/:username',async (req:Request , res:Response) =>
+{
+  try{
+    const user = await UserModel.findOne({name:req.params.name});
+    res.json(user);
+  }catch(err)
+  {
+    console.error(err);
+  }
+}
+)
+//get developer id by name
+app.get('/developers/:name',async (req:Request , res:Response) =>
+{
+  try{
+    const developer = await DevelopersModel.findOne({name:req.params.name});
+    res.json(developer);
+  }catch(err)
+  {
+    console.error(err);
+  }
+}
+)
 export default app;

@@ -1,5 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Games from './Games';
+import { DevelopersModel, IDevelopers } from './Developers';
 import { ar, faker } from '@faker-js/faker';
+import { GamesModel, IGames } from './GamesModel';
 
 const arrayOfAdventures: string[] = [
   'Adventure',
@@ -272,40 +275,43 @@ for (let i = 0; i < 100; i++) {
   arrayofNouns[i] = arrayofNouns[i].charAt(0).toUpperCase() + arrayofNouns[i].slice(1);
 }
 
-function generateGames(): Games[] {
-  const array = [];
-  for (let i = 0; i < 20; i++) {
-    const number_game: string =
-      faker.number.int({ min: 1, max: 3 }).toString() == '1' ? faker.number.int({ min: 1, max: 6 }).toString() : '';
-    const game_name: String =
-      arrayOfPrefixes[faker.number.int(arrayOfPrefixes.length - 1)] +
-      ' ' +
-      arrayofAdjectives[faker.number.int(arrayofAdjectives.length - 1)] +
-      ' ' +
-      arrayOfAdventures[faker.number.int(arrayOfAdventures.length - 1)] +
-      ' of ' +
-      arrayofNouns[faker.number.int(arrayofNouns.length - 1)] +
-      ' ' +
-      number_game;
-    const date: string =
-      faker.date.month() +
-      ' ' +
-      faker.number.int({ min: 1, max: 29 }) +
-      ', ' +
-      faker.number.int({ min: 2000, max: 2024 });
-    const game = new Games(
-      game_name.toString(),
-      arrayOfGenres[faker.number.int(arrayOfGenres.length - 1)],
-      date.toString(),
-      faker.number.int({ min: 10, max: 187 }),
-      faker.number.int().toString()
-    );
-    array.push(game);
-  }
-  return array;
-}
+// export function generateGames(developersData: Developers[]): Games[] {
+//   const array = [];
+//   for (let i = 0; i < 20; i++) {
+//     const number_game: string =
+//       faker.number.int({ min: 1, max: 3 }).toString() == '1' ? faker.number.int({ min: 1, max: 6 }).toString() : '';
+//     const game_name: String =
+//       arrayOfPrefixes[faker.number.int(arrayOfPrefixes.length - 1)] +
+//       ' ' +
+//       arrayofAdjectives[faker.number.int(arrayofAdjectives.length - 1)] +
+//       ' ' +
+//       arrayOfAdventures[faker.number.int(arrayOfAdventures.length - 1)] +
+//       ' of ' +
+//       arrayofNouns[faker.number.int(arrayofNouns.length - 1)] +
+//       ' ' +
+//       number_game;
+//     const date: string =
+//       faker.date.month() +
+//       ' ' +
+//       faker.number.int({ min: 1, max: 29 }) +
+//       ', ' +
+//       faker.number.int({ min: 2000, max: 2024 });
+//     const developer_id: string = developersData[faker.number.int(developersData.length - 1)]._id;
 
-export function generateNewGame() {
+//     const gameData = {
+//       name: game_name.toString(),
+//       genre: arrayOfGenres[faker.number.int(arrayOfGenres.length - 1)],
+//       release_date: date.toString(),
+//       size: faker.number.int({ min: 10, max: 187 }),
+//       developer_id: developer_id,
+//     };
+//     const game = new GamesModel(gameData);
+//     const savedGame = game.save();
+//   }
+
+//   return array;
+// }
+export async function generateNewGame(): Promise<IGames> {
   const number_game: string =
     faker.number.int({ min: 1, max: 3 }).toString() == '1' ? faker.number.int({ min: 1, max: 6 }).toString() : '';
   const game_name: String =
@@ -324,16 +330,32 @@ export function generateNewGame() {
     faker.number.int({ min: 1, max: 29 }) +
     ', ' +
     faker.number.int({ min: 2000, max: 2024 });
-  const game = new Games(
-    game_name.toString(),
-    arrayOfGenres[faker.number.int(arrayOfGenres.length - 1)],
-    date.toString(),
-    faker.number.int({ min: 10, max: 187 }),
-    faker.number.int().toString()
-  );
-  return game;
+
+  const developer_id_random = faker.number.int({ min: 0, max: 100000 });
+  
+  const gameData = {
+    name: game_name.toString(),
+    genre: arrayOfGenres[faker.number.int(arrayOfGenres.length - 1)],
+    release_date: date.toString(),
+    size: faker.number.int({ min: 10, max: 187 }),
+    developer_id: developer_id_random,
+  };
+  const game = new GamesModel(gameData);
+  const savedGame = await game.save();
+  return savedGame;
 }
 
-const newArrayRandom = generateGames();
+export async function generateNewDeveloper(): Promise<IDevelopers> {
+  const developerData = {
+    name: faker.person.firstName(),
+  };
+  const developer = new DevelopersModel(developerData);
+  const savedDeveloper = await developer.save();
+  return savedDeveloper;
+}
 
-export default newArrayRandom;
+//function to generate 100000 games and developers
+export async function boom(): Promise<void> {
+    return;
+}
+

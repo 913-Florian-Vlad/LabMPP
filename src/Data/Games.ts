@@ -1,16 +1,20 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 class Games {
   //react context
   private name: string;
   private genre: string;
   private release_date: string;
-  private game_id: string;
+  private _id: string;
   private size: number;
-  constructor(name: string, genre: string, release_date: string, size: number, game_id: string) {
+  private developer_id: number;
+
+  constructor(name: string, genre: string, release_date: string, size: number, game_id: string, developer_id: number) {
     this.name = name;
     this.genre = genre;
     this.release_date = release_date;
-    this.game_id = game_id;
+    this._id = game_id;
     this.size = size;
+    this.developer_id = developer_id;
   }
 
   public getGameSize(): number {
@@ -34,7 +38,7 @@ class Games {
   }
 
   public getGameId(): string {
-    return this.game_id;
+    return this._id;
   }
 
   public setGameName(name: string) {
@@ -50,7 +54,18 @@ class Games {
   }
 
   public setGameId(game_id: string) {
-    this.game_id = game_id;
+    this._id = game_id;
+  }
+
+  public toJSON() {
+    return {
+      name: this.name,
+      genre: this.genre,
+      release_date: this.release_date,
+      _id: this._id,
+      size: this.size,
+      developer_id: this.developer_id,
+    };
   }
 }
 
