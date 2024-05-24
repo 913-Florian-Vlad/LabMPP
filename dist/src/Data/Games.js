@@ -1,12 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 class Games {
-    constructor(name, genre, release_date, size, game_id) {
+    constructor(name, genre, release_date, size, game_id, developer_id) {
         this.name = name;
         this.genre = genre;
         this.release_date = release_date;
-        this.game_id = game_id;
+        this._id = game_id;
         this.size = size;
+        this.developer_id = developer_id;
     }
     getGameSize() {
         return this.size;
@@ -24,7 +25,7 @@ class Games {
         return this.release_date;
     }
     getGameId() {
-        return this.game_id;
+        return this._id;
     }
     setGameName(name) {
         this.name = name;
@@ -36,7 +37,17 @@ class Games {
         this.release_date = release_date;
     }
     setGameId(game_id) {
-        this.game_id = game_id;
+        this._id = game_id;
+    }
+    toJSON() {
+        return {
+            name: this.name,
+            genre: this.genre,
+            release_date: this.release_date,
+            _id: this._id,
+            size: this.size,
+            developer_id: this.developer_id,
+        };
     }
 }
 exports.default = Games;
